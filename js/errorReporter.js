@@ -18,7 +18,7 @@ var ErrorReporter = (function () {
     webhookUrl:  "https://vm-dev-access.centralindia.cloudapp.azure.com/webhook/triage-issue",
     appName:     "NexusFlow",
     environment: "production",
-    repoOwner:   "anirban-ceptes",
+    repoOwner:   "anirban-saksoft",
     repoName:    "nexusflow-app"
   };
   // ──────────────────────────────────────────────────
