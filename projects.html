@@ -10,7 +10,7 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
+    <!-- ── Sidebar ──────────────────────────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -40,7 +40,7 @@
       </nav>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
+    <!-- ── Main Content ────────────────────────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
@@ -83,13 +83,6 @@
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Null Reference in getProjectTemplate()
-           ═══════════════════════════════════════════
-           createProject() calls getProjectTemplate(category),
-           which returns null for any category. Then accessing
-           template.fields throws a TypeError.
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Create New Project</h2>
 
@@ -130,7 +123,7 @@
   </div>
 
 
-  <!-- ── Scripts ──────────────────────────────────── -->
+  <!-- ── Scripts ──────────────────────────────────────────────────── -->
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
 
@@ -147,9 +140,9 @@
 
 
     /**
-     * ─────────────────────────────────────────────
+     * ──────────────────────────────────────────────────────────────────
      *  PROJECT TEMPLATES
-     * ─────────────────────────────────────────────
+     * ──────────────────────────────────────────────────────────────────
      *  Each category should have a template with
      *  default fields, milestones, and structure.
      *
@@ -181,32 +174,24 @@
 
 
     /**
-     * ═══════════════════════════════════════════════
+     * ────────────────────────────────────────────────────────────────────
      *  getProjectTemplate(category)
-     * ═══════════════════════════════════════════════
+     * ────────────────────────────────────────────────────────────────────
      *  Looks up the template for a given project category.
-     *
-     *  BUG: This function was left as a stub during
-     *       development. It returns null instead of
-     *       looking up from PROJECT_TEMPLATES.
-     *
-     *       The fix: return PROJECT_TEMPLATES[category] || null;
-     * ═══════════════════════════════════════════════
+     * ────────────────────────────────────────────────────────────────────
      */
     function getProjectTemplate(category) {
-      // BUG: Returns null instead of looking up the template
-      return null;
+      return PROJECT_TEMPLATES[category] || null;
     }
 
 
     /**
-     * ═══════════════════════════════════════════════
+     * ────────────────────────────────────────────────────────────────────
      *  createProject()
-     * ═══════════════════════════════════════════════
+     * ────────────────────────────────────────────────────────────────────
      *  Reads form values, gets the project template,
-     *  and creates a new project. Crashes because
-     *  getProjectTemplate() returns null.
-     * ═══════════════════════════════════════════════
+     *  and creates a new project.
+     * ────────────────────────────────────────────────────────────────────
      */
     function createProject() {
       try {
@@ -225,13 +210,10 @@
         }
 
         // Get the template for the selected category
-        // BUG: getProjectTemplate() always returns null
         var template = getProjectTemplate(category);
 
-        // THIS LINE CRASHES — template is null, so .fields throws TypeError
         var requiredFields = template.fields;
 
-        // This code would run if the bug were fixed:
         var project = {
           id: NexusUtils.generateId("PROJ"),
           name: name,
@@ -266,7 +248,7 @@
     }
 
 
-    /* ── Reset form ────────────────────────────── */
+    /* ── Reset form ──────────────────────────────────────────────────── */
     function resetProjectForm() {
       document.getElementById("projectName").value = "";
       document.getElementById("projectCategory").value = "";
@@ -275,7 +257,7 @@
         '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
+    /* ── Toast helper ──────────────────────────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();
