@@ -15,7 +15,7 @@ var ErrorReporter = (function () {
   //  CONFIG — Edit these values once for your project.
   // ──────────────────────────────────────────────────
   var CONFIG = {
-    webhookUrl:  "https://demoapps4.app.n8n.cloud/webhook/triage-issue",
+    webhookUrl:  "https://vm-dev-access.centralindia.cloudapp.azure.com/webhook/triage-issue",
     appName:     "NexusFlow",
     environment: "production",
     repoOwner:   "anirban-ceptes",
