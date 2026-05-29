@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — NexusFlow</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="login-page">
+
+  <div class="login-container">
+
+    <div class="login-logo">
+      <div class="logo-icon">N</div>
+      <span>NexusFlow</span>
+    </div>
+
+    <h2 class="login-title">Sign in to your account</h2>
+
+    <div id="loginError" class="login-error" style="display:none;"></div>
+
+    <div class="field">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="handleLogin()">Sign In</button>
+
+    <div class="login-hint">
+      <strong>Demo credentials:</strong><br>
+      admin: anirban@ceptes.com / admin123<br>
+      manager: jane@acme.com / manager123<br>
+      member: mike@acme.com / member123
+    </div>
+
+  </div>
+
+  <script src="js/jwtAuth.js"></script>
+  <script>
+    // If already logged in, redirect to dashboard
+    if (NexusJWT.isAuthenticated()) {
+      window.location.href = "index.html";
+    }
+
+    // Allow Enter key to submit
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") handleLogin();
+    });
+
+    function handleLogin() {
+      var email    = document.getElementById("loginEmail").value.trim();
+      var password = document.getElementById("loginPassword").value;
+      var errBox   = document.getElementById("loginError");
+
+      errBox.style.display = "none";
+
+      if (!email || !password) {
+        errBox.textContent = "Please enter both email and password.";
+        errBox.style.display = "block";
+        return;
+      }
+
+      var result = NexusJWT.login(email, password);
+
+      if (!result.success) {
+        errBox.textContent = result.message;
+        errBox.style.display = "block";
+        return;
+      }
+
+      // Redirect to originally requested page (or dashboard)
+      var redirect = localStorage.getItem("nexusflow_redirect") || "index.html";
+      localStorage.removeItem("nexusflow_redirect");
+      window.location.href = redirect;
+    }
+  </script>
+
+</body>
+</html>

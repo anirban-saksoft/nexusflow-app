@@ -1,24 +1,15 @@
 /**
  * ============================================================
- *  auth.js — NexusFlow Auth & Permissions
+ *  auth.js — NexusFlow Auth & Permissions (JWT-integrated)
  * ============================================================
- *  Simulates an authentication and role-permission system.
- *  In a real app this would call an API; here we use mock data.
+ *  Provides role-based permission checks backed by the live
+ *  JWT session managed by NexusJWT (js/jwtAuth.js).
+ *
+ *  IMPORTANT: jwtAuth.js must be loaded before auth.js.
  * ============================================================
  */
 
 var NexusAuth = (function () {
-
-  /**
-   * Mock user session (simulates a logged-in admin user)
-   */
-  var _currentUser = {
-    id: "USR-001",
-    name: "Anirban Roy",
-    email: "anirban@ceptes.com",
-    role: "admin"
-  };
-
 
   /**
    * Role-permission matrix.
@@ -35,41 +26,43 @@ var NexusAuth = (function () {
   /**
    * getCurrentUser()
    * ─────────────────
-   * Returns the current logged-in user object.
-   * This function is clean — no bugs here.
+   * Returns the current logged-in user decoded from the JWT.
+   * Returns null if not authenticated.
    */
   function getCurrentUser() {
-    return _currentUser;
+    return NexusJWT.getCurrentUser();
   }
 
 
   /**
    * checkPermission(userId, action)
    * ─────────────────────────────────
-   * Checks whether the given user has permission to perform
-   * the specified action.
+   * Checks whether the current JWT user has permission to
+   * perform the specified action.
    *
-   * Expected return value:
-   *   { allowed: true/false, reason: "..." }
+   * Returns { allowed: true/false, reason: "..." }
    *
-   * BUG: This function was stubbed out during development and
-   *      always returns null instead of performing the actual
-   *      permission lookup against _permissions.
-   *
-   *      The calling code in team.html does:
-   *        var result = NexusAuth.checkPermission(userId, action);
-   *        if (result.allowed) { ... }
-   *
-   *      Since result is null, accessing result.allowed throws
-   *      a TypeError.
-   *
-   *      The fix: look up the user's role, check _permissions,
-   *      and return the proper { allowed, reason } object.
+   * FIX: Previously returned null (stub). Now performs the
+   * actual role lookup against the _permissions matrix using
+   * the role embedded in the JWT payload.
    */
   function checkPermission(userId, action) {
-    // TODO: Implement actual permission check
-    // Should look up user role and check _permissions matrix
-    return null;
+    var user = NexusJWT.getCurrentUser();
+
+    if (!user) {
+      return { allowed: false, reason: "Not authenticated" };
+    }
+
+    var role    = user.role;
+    var allowed = Array.isArray(_permissions[role]) &&
+                  _permissions[role].indexOf(action) !== -1;
+
+    return {
+      allowed: allowed,
+      reason: allowed
+        ? "Permission granted for role: " + role
+        : "Role '" + role + "' does not have permission: " + action
+    };
   }
 
 
@@ -77,14 +70,13 @@ var NexusAuth = (function () {
    * getAllRoles()
    * ──────────────
    * Returns all available role names.
-   * This function is clean — no bugs here.
    */
   function getAllRoles() {
     return Object.keys(_permissions);
   }
 
 
-  // ── Public API ──────────────────────────────────
+  // ── Public API ──────────────────────────────────────────────
   return {
     getCurrentUser:  getCurrentUser,
     checkPermission: checkPermission,
