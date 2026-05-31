@@ -58,51 +58,40 @@
               <th>Email</th>
               <th>Role</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td class="name-cell">Anirban Roy</td>
-              <td>anirban@ceptes.com</td>
-              <td>Admin</td>
-              <td><span class="status status-active">Active</span></td>
-            </tr>
-            <tr>
-              <td class="name-cell">Jane Smith</td>
-              <td>jane@acme.com</td>
-              <td>Manager</td>
-              <td><span class="status status-active">Active</span></td>
-            </tr>
-            <tr>
-              <td class="name-cell">Mike Chen</td>
-              <td>mike@acme.com</td>
-              <td>Member</td>
-              <td><span class="status status-active">Active</span></td>
-            </tr>
-            <tr>
-              <td class="name-cell">Sara Patel</td>
-              <td>sara@acme.com</td>
-              <td>Member</td>
-              <td><span class="status status-pending">Pending</span></td>
-            </tr>
-            <tr>
-              <td class="name-cell">Tom Wilson</td>
-              <td>tom@acme.com</td>
-              <td>Viewer</td>
-              <td><span class="status status-active">Active</span></td>
-            </tr>
+          <tbody id="teamTableBody">
+            <!-- Rendered by renderTeamTable() -->
           </tbody>
         </table>
       </div>
 
       <!-- ═══════════════════════════════════════════
-           BUG: Multi-file — auth.js + team.html
+           Delete Member
            ═══════════════════════════════════════════
-           assignRole() calls NexusAuth.checkPermission()
-           from auth.js, which returns null. Then
-           result.allowed throws TypeError.
-           Agent must read both team.html and js/auth.js
-           to trace the root cause.
+           Select a member from the dropdown and click
+           "Remove Member" to invoke deleteMember() which
+           calls NexusStore.deleteMember(id).
+           Guards: cannot delete the last Admin.
+           ═══════════════════════════════════════════ -->
+      <div class="card">
+        <h2>Remove Member <span class="badge">Destructive</span></h2>
+
+        <div class="field">
+          <label>Select Member to Remove</label>
+          <select id="deleteMemberSelect">
+            <option value="">Select a member</option>
+          </select>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-danger" onclick="deleteMember()">Remove Member</button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════
+           BUG: Multi-file — auth.js + team.html
            ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Assign Role <span class="badge">Requires Permission</span></h2>
@@ -150,6 +139,7 @@
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/dataStore.js"></script>
 
   <script>
     /* ── Intercept console.log for the demo panel ── */
@@ -163,26 +153,77 @@
     };
 
 
+    /* ── Render team table from NexusStore ── */
+    function renderTeamTable() {
+      var tbody  = document.getElementById("teamTableBody");
+      var select = document.getElementById("deleteMemberSelect");
+      var members = NexusStore.getMembers();
+
+      tbody.innerHTML  = "";
+      select.innerHTML = '<option value="">Select a member</option>';
+
+      members.forEach(function (m) {
+        var statusClass = m.status === "active" ? "status-active" : "status-pending";
+        var statusLabel = m.status.charAt(0).toUpperCase() + m.status.slice(1);
+
+        tbody.innerHTML +=
+          '<tr>' +
+          '  <td class="name-cell">' + m.name + '</td>' +
+          '  <td>' + m.email + '</td>' +
+          '  <td>' + m.role + '</td>' +
+          '  <td><span class="status ' + statusClass + '">' + statusLabel + '</span></td>' +
+          '  <td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px" onclick="deleteMemberById(\'' + m.id + '\')">Remove</button></td>' +
+          '</tr>';
+
+        select.innerHTML += '<option value="' + m.id + '">' + m.name + ' — ' + m.role + ' (' + m.id + ')</option>';
+      });
+    }
+
+
+    /**
+     * ═══════════════════════════════════════════════
+     *  deleteMember()
+     * ═══════════════════════════════════════════════
+     *  Reads the selected member ID from the dropdown
+     *  and calls NexusStore.deleteMember(id).
+     *
+     *  DELETE API equivalent: DELETE /api/team/:id
+     *  Guard: Cannot delete the last Admin.
+     * ═══════════════════════════════════════════════
+     */
+    function deleteMember() {
+      var id = document.getElementById("deleteMemberSelect").value;
+      if (!id) {
+        showToast("Please select a member to remove.", "error");
+        return;
+      }
+      deleteMemberById(id);
+    }
+
+    function deleteMemberById(id) {
+      try {
+        if (!confirm("Are you sure you want to remove member: " + id + "? This cannot be undone.")) return;
+        var deleted = NexusStore.deleteMember(id);
+        showToast("Member '" + deleted.name + "' (" + deleted.id + ") removed successfully.", "success");
+        renderTeamTable();
+      } catch (e) {
+        ErrorReporter.report({
+          error: e,
+          source_file: "team.html",
+          priority: "high",
+          title: "Member deletion failed",
+          context: { module: "TeamService", action: "deleteMember", inputs: { memberId: id } }
+        });
+        showToast("Error: " + e.message, "error");
+      }
+    }
+
+
     /**
      * ═══════════════════════════════════════════════
      *  assignRole()
      * ═══════════════════════════════════════════════
-     *  Assigns a new role to a team member.
-     *
-     *  Before making the change, it calls
-     *  NexusAuth.checkPermission() to verify the
-     *  current user has the "assign_role" permission.
-     *
-     *  BUG: NexusAuth.checkPermission() in auth.js
-     *       returns null instead of { allowed, reason }.
-     *       Accessing result.allowed on null throws
-     *       a TypeError.
-     *
-     *  The agent needs to:
-     *   1. See the crash is on result.allowed
-     *   2. Trace into js/auth.js
-     *   3. Find that checkPermission() returns null
-     *   4. Fix checkPermission() to do the actual lookup
+     *  BUG: NexusAuth.checkPermission() returns null.
      * ═══════════════════════════════════════════════
      */
     function assignRole() {
@@ -190,19 +231,11 @@
         var memberId = document.getElementById("memberSelect").value;
         var newRole  = document.getElementById("roleSelect").value;
 
-        if (!memberId) {
-          showToast("Please select a team member.", "error");
-          return;
-        }
-        if (!newRole) {
-          showToast("Please select a role.", "error");
-          return;
-        }
+        if (!memberId) { showToast("Please select a team member.", "error"); return; }
+        if (!newRole)  { showToast("Please select a role.", "error"); return; }
 
-        // Get the current user (the one performing the action)
         var currentUser = NexusAuth.getCurrentUser();
 
-        // Check if current user has permission to assign roles
         // BUG: checkPermission() returns null → result.allowed crashes
         var result = NexusAuth.checkPermission(currentUser.id, "assign_role");
 
@@ -253,6 +286,9 @@
       toast.style.display = "block";
       setTimeout(function () { toast.remove(); }, 5000);
     }
+
+    /* ── Init ──────────────────────────────────── */
+    renderTeamTable();
   </script>
 
 </body>
