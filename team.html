@@ -10,7 +10,6 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -40,7 +39,6 @@
       </nav>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
@@ -48,7 +46,6 @@
         <p>Manage team members and assign roles. Select a member and new role, then click "Assign Role".</p>
       </div>
 
-      <!-- Team Members Table -->
       <div class="card">
         <h2>Team Members</h2>
         <table class="data-table">
@@ -61,41 +58,25 @@
               <th>Action</th>
             </tr>
           </thead>
-          <tbody id="teamTableBody">
-            <!-- Rendered by renderTeamTable() -->
-          </tbody>
+          <tbody id="teamTableBody"></tbody>
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           Delete Member
-           ═══════════════════════════════════════════
-           Select a member from the dropdown and click
-           "Remove Member" to invoke deleteMember() which
-           calls NexusStore.deleteMember(id).
-           Guards: cannot delete the last Admin.
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Remove Member <span class="badge">Destructive</span></h2>
-
         <div class="field">
           <label>Select Member to Remove</label>
           <select id="deleteMemberSelect">
             <option value="">Select a member</option>
           </select>
         </div>
-
         <div class="btn-row">
           <button class="btn btn-danger" onclick="deleteMember()">Remove Member</button>
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Multi-file — auth.js + team.html
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Assign Role <span class="badge">Requires Permission</span></h2>
-
         <div class="field-row">
           <div class="field">
             <label>Team Member</label>
@@ -118,14 +99,12 @@
             </select>
           </div>
         </div>
-
         <div class="btn-row">
           <button class="btn btn-primary" onclick="assignRole()">Assign Role</button>
           <button class="btn btn-secondary" onclick="resetRoleForm()">Reset</button>
         </div>
       </div>
 
-      <!-- Console Panel -->
       <div class="console-panel">
         <h3>Live Error Console</h3>
         <pre id="consoleOutput"><span class="empty">Waiting for an error to be reported...</span></pre>
@@ -134,15 +113,12 @@
     </main>
   </div>
 
-
-  <!-- ── Scripts ──────────────────────────────────── -->
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/dataStore.js"></script>
 
   <script>
-    /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
       _origLog.apply(console, arguments);
@@ -152,20 +128,15 @@
       }
     };
 
-
-    /* ── Render team table from NexusStore ── */
     function renderTeamTable() {
       var tbody  = document.getElementById("teamTableBody");
       var select = document.getElementById("deleteMemberSelect");
       var members = NexusStore.getMembers();
-
       tbody.innerHTML  = "";
       select.innerHTML = '<option value="">Select a member</option>';
-
       members.forEach(function (m) {
         var statusClass = m.status === "active" ? "status-active" : "status-pending";
         var statusLabel = m.status.charAt(0).toUpperCase() + m.status.slice(1);
-
         tbody.innerHTML +=
           '<tr>' +
           '  <td class="name-cell">' + m.name + '</td>' +
@@ -174,29 +145,13 @@
           '  <td><span class="status ' + statusClass + '">' + statusLabel + '</span></td>' +
           '  <td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px" onclick="deleteMemberById(\'' + m.id + '\')">Remove</button></td>' +
           '</tr>';
-
         select.innerHTML += '<option value="' + m.id + '">' + m.name + ' — ' + m.role + ' (' + m.id + ')</option>';
       });
     }
 
-
-    /**
-     * ═══════════════════════════════════════════════
-     *  deleteMember()
-     * ═══════════════════════════════════════════════
-     *  Reads the selected member ID from the dropdown
-     *  and calls NexusStore.deleteMember(id).
-     *
-     *  DELETE API equivalent: DELETE /api/team/:id
-     *  Guard: Cannot delete the last Admin.
-     * ═══════════════════════════════════════════════
-     */
     function deleteMember() {
       var id = document.getElementById("deleteMemberSelect").value;
-      if (!id) {
-        showToast("Please select a member to remove.", "error");
-        return;
-      }
+      if (!id) { showToast("Please select a member to remove.", "error"); return; }
       deleteMemberById(id);
     }
 
@@ -218,64 +173,37 @@
       }
     }
 
-
-    /**
-     * ═══════════════════════════════════════════════
-     *  assignRole()
-     * ═══════════════════════════════════════════════
-     *  BUG: NexusAuth.checkPermission() returns null.
-     * ═══════════════════════════════════════════════
-     */
     function assignRole() {
       try {
         var memberId = document.getElementById("memberSelect").value;
         var newRole  = document.getElementById("roleSelect").value;
-
         if (!memberId) { showToast("Please select a team member.", "error"); return; }
         if (!newRole)  { showToast("Please select a role.", "error"); return; }
-
         var currentUser = NexusAuth.getCurrentUser();
-
-        // BUG: checkPermission() returns null → result.allowed crashes
         var result = NexusAuth.checkPermission(currentUser.id, "assign_role");
-
-        // THIS LINE CRASHES — result is null
         if (result.allowed) {
           showToast("Role '" + newRole + "' assigned to member " + memberId + " successfully.", "success");
         } else {
           showToast("Permission denied: " + result.reason, "error");
         }
-
       } catch (e) {
         ErrorReporter.report({
           error: e,
           source_file: "team.html",
           priority: "critical",
           title: "Role assignment failed — null permission check result",
-          context: {
-            module: "TeamService",
-            action: "assignRole",
-            inputs: {
-              memberId: memberId,
-              newRole: newRole,
-              currentUser: NexusAuth.getCurrentUser().name
-            }
-          }
+          context: { module: "TeamService", action: "assignRole", inputs: { memberId: memberId, newRole: newRole, currentUser: NexusAuth.getCurrentUser().name } }
         });
         showToast("Error: " + e.message + " — reported to monitoring.", "error");
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
     function resetRoleForm() {
       document.getElementById("memberSelect").value = "";
       document.getElementById("roleSelect").value = "";
-      document.getElementById("consoleOutput").innerHTML =
-        '<span class="empty">Waiting for an error to be reported...</span>';
+      document.getElementById("consoleOutput").innerHTML = '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();
@@ -287,7 +215,6 @@
       setTimeout(function () { toast.remove(); }, 5000);
     }
 
-    /* ── Init ──────────────────────────────────── */
     renderTeamTable();
   </script>
 

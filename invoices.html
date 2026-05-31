@@ -10,7 +10,6 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -40,7 +39,6 @@
       </nav>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
@@ -48,7 +46,6 @@
         <p>Generate and manage invoices. Fill in the details and click "Generate Invoice" to trigger the bug.</p>
       </div>
 
-      <!-- Recent Invoices -->
       <div class="card">
         <h2>Recent Invoices</h2>
         <table class="data-table">
@@ -62,41 +59,25 @@
               <th>Action</th>
             </tr>
           </thead>
-          <tbody id="invoicesTableBody">
-            <!-- Rendered by renderInvoicesTable() -->
-          </tbody>
+          <tbody id="invoicesTableBody"></tbody>
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           Delete Invoice
-           ═══════════════════════════════════════════
-           Select an invoice from the dropdown and click
-           "Delete Invoice" to invoke deleteInvoice() which
-           calls NexusStore.deleteInvoice(id).
-           Guard: Cannot delete paid (active) invoices.
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Delete Invoice <span class="badge">Destructive</span></h2>
-
         <div class="field">
           <label>Select Invoice to Delete</label>
           <select id="deleteInvoiceSelect">
             <option value="">Select an invoice</option>
           </select>
         </div>
-
         <div class="btn-row">
           <button class="btn btn-danger" onclick="deleteInvoice()">Delete Invoice</button>
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Multi-file — invoices.html + js/utils.js
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Generate Invoice</h2>
-
         <div class="field-row">
           <div class="field">
             <label>Client Name</label>
@@ -107,7 +88,6 @@
             <input type="email" id="clientEmail" placeholder="billing@acme.com" />
           </div>
         </div>
-
         <div class="field-row">
           <div class="field">
             <label>Service Description</label>
@@ -118,19 +98,16 @@
             <input type="text" id="invoiceAmount" placeholder="e.g. 5000" />
           </div>
         </div>
-
         <div class="field">
           <label>Due Date</label>
           <input type="date" id="dueDate" />
         </div>
-
         <div class="btn-row">
           <button class="btn btn-primary" onclick="generateInvoice()">Generate Invoice</button>
           <button class="btn btn-secondary" onclick="resetInvoiceForm()">Reset</button>
         </div>
       </div>
 
-      <!-- Console Panel -->
       <div class="console-panel">
         <h3>Live Error Console</h3>
         <pre id="consoleOutput"><span class="empty">Waiting for an error to be reported...</span></pre>
@@ -139,14 +116,11 @@
     </main>
   </div>
 
-
-  <!-- ── Scripts ──────────────────────────────────── -->
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/dataStore.js"></script>
 
   <script>
-    /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
       _origLog.apply(console, arguments);
@@ -156,24 +130,15 @@
       }
     };
 
-
-    /* ── Render invoices table from NexusStore ── */
     function renderInvoicesTable() {
       var tbody  = document.getElementById("invoicesTableBody");
       var select = document.getElementById("deleteInvoiceSelect");
       var invoices = NexusStore.getInvoices();
-
       tbody.innerHTML  = "";
       select.innerHTML = '<option value="">Select an invoice</option>';
-
       invoices.forEach(function (inv) {
-        var statusClass =
-          inv.status === "active"   ? "status-active"   :
-          inv.status === "pending"  ? "status-pending"  : "status-inactive";
-        var statusLabel =
-          inv.status === "active"   ? "Paid"    :
-          inv.status === "pending"  ? "Pending" : "Overdue";
-
+        var statusClass = inv.status === "active" ? "status-active" : inv.status === "pending" ? "status-pending" : "status-inactive";
+        var statusLabel = inv.status === "active" ? "Paid" : inv.status === "pending" ? "Pending" : "Overdue";
         tbody.innerHTML +=
           '<tr>' +
           '  <td class="name-cell">' + inv.id + '</td>' +
@@ -183,29 +148,13 @@
           '  <td>' + inv.date + '</td>' +
           '  <td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px" onclick="deleteInvoiceById(\'' + inv.id + '\')">Delete</button></td>' +
           '</tr>';
-
         select.innerHTML += '<option value="' + inv.id + '">' + inv.id + ' — ' + inv.client + ' (' + statusLabel + ')</option>';
       });
     }
 
-
-    /**
-     * ═══════════════════════════════════════════════
-     *  deleteInvoice()
-     * ═══════════════════════════════════════════════
-     *  Reads the selected invoice ID from the dropdown
-     *  and calls NexusStore.deleteInvoice(id).
-     *
-     *  DELETE API equivalent: DELETE /api/invoices/:id
-     *  Guard: Cannot delete paid (status=active) invoices.
-     * ═══════════════════════════════════════════════
-     */
     function deleteInvoice() {
       var id = document.getElementById("deleteInvoiceSelect").value;
-      if (!id) {
-        showToast("Please select an invoice to delete.", "error");
-        return;
-      }
+      if (!id) { showToast("Please select an invoice to delete.", "error"); return; }
       deleteInvoiceById(id);
     }
 
@@ -227,74 +176,46 @@
       }
     }
 
-
-    /**
-     * ═══════════════════════════════════════════════
-     *  generateInvoice()
-     * ═══════════════════════════════════════════════
-     *  BUG: amount is a string from the form input.
-     *       formatCurrency() calls .toFixed() which
-     *       doesn't exist on strings → TypeError.
-     * ═══════════════════════════════════════════════
-     */
     function generateInvoice() {
       try {
         var clientName  = document.getElementById("clientName").value;
         var clientEmail = document.getElementById("clientEmail").value;
         var serviceDesc = document.getElementById("serviceDesc").value;
-        var amount      = document.getElementById("invoiceAmount").value;   // STRING from input
+        var amount      = document.getElementById("invoiceAmount").value;
         var dueDate     = document.getElementById("dueDate").value;
-
         if (!clientName.trim()) { showToast("Please enter a client name.", "error"); return; }
         if (!amount || isNaN(amount)) { showToast("Please enter a valid amount.", "error"); return; }
-
-        // BUG: amount is a string — formatCurrency() calls .toFixed() which crashes
-        var formattedAmount = NexusUtils.formatCurrency(amount);
-
+        var formattedAmount = NexusUtils.formatCurrency(amount); // BUG: amount is string
         var invoice = {
           id: NexusUtils.generateId("INV"),
-          client: clientName,
-          email: clientEmail,
-          service: serviceDesc,
-          amount: formattedAmount,
-          date: dueDate,
-          status: "pending",
+          client: clientName, email: clientEmail, service: serviceDesc,
+          amount: formattedAmount, date: dueDate, status: "pending",
           created: new Date().toISOString()
         };
-
         NexusStore.addInvoice(invoice);
         renderInvoicesTable();
         showToast("Invoice " + invoice.id + " generated for " + formattedAmount + ".", "success");
-
       } catch (e) {
         ErrorReporter.report({
           error: e,
           source_file: "invoices.html",
           priority: "critical",
           title: "Invoice generation failed — type error in currency formatting",
-          context: {
-            module: "InvoiceService",
-            action: "generateInvoice",
-            inputs: { clientName: clientName, amount: amount, amountType: typeof amount }
-          }
+          context: { module: "InvoiceService", action: "generateInvoice", inputs: { clientName: clientName, amount: amount, amountType: typeof amount } }
         });
         showToast("Error: " + e.message + " — reported to monitoring.", "error");
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
     function resetInvoiceForm() {
       document.getElementById("clientName").value = "";
       document.getElementById("clientEmail").value = "";
       document.getElementById("serviceDesc").value = "";
       document.getElementById("invoiceAmount").value = "";
       document.getElementById("dueDate").value = "";
-      document.getElementById("consoleOutput").innerHTML =
-        '<span class="empty">Waiting for an error to be reported...</span>';
+      document.getElementById("consoleOutput").innerHTML = '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();
@@ -306,7 +227,6 @@
       setTimeout(function () { toast.remove(); }, 5000);
     }
 
-    /* ── Init ──────────────────────────────────── */
     renderInvoicesTable();
   </script>
 
