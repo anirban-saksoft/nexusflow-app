@@ -58,37 +58,39 @@
               <th>Category</th>
               <th>Status</th>
               <th>Created</th>
+              <th>Action</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td class="name-cell">Website Redesign</td>
-              <td>Engineering</td>
-              <td><span class="status status-active">Active</span></td>
-              <td>Mar 15, 2026</td>
-            </tr>
-            <tr>
-              <td class="name-cell">Q2 Campaign</td>
-              <td>Marketing</td>
-              <td><span class="status status-active">Active</span></td>
-              <td>Mar 22, 2026</td>
-            </tr>
-            <tr>
-              <td class="name-cell">SOC 2 Compliance</td>
-              <td>Operations</td>
-              <td><span class="status status-pending">Pending</span></td>
-              <td>Apr 01, 2026</td>
-            </tr>
+          <tbody id="projectsTableBody">
+            <!-- Rendered by renderProjectsTable() -->
           </tbody>
         </table>
       </div>
 
       <!-- ═══════════════════════════════════════════
-           BUG: Null Reference in getProjectTemplate()
+           Delete Project
            ═══════════════════════════════════════════
-           createProject() calls getProjectTemplate(category),
-           which returns null for any category. Then accessing
-           template.fields throws a TypeError.
+           Select a project from the dropdown and click
+           "Delete Project" to invoke deleteProject() which
+           calls NexusStore.deleteProject(id).
+           ═══════════════════════════════════════════ -->
+      <div class="card">
+        <h2>Delete Project <span class="badge">Destructive</span></h2>
+
+        <div class="field">
+          <label>Select Project to Delete</label>
+          <select id="deleteProjectSelect">
+            <option value="">Select a project</option>
+          </select>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-danger" onclick="deleteProject()">Delete Project</button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════
+           BUG: Null Reference in getProjectTemplate()
            ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Create New Project</h2>
@@ -133,6 +135,7 @@
   <!-- ── Scripts ──────────────────────────────────── -->
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/dataStore.js"></script>
 
   <script>
     /* ── Intercept console.log for the demo panel ── */
@@ -146,15 +149,75 @@
     };
 
 
+    /* ── Render projects table from NexusStore ── */
+    function renderProjectsTable() {
+      var tbody = document.getElementById("projectsTableBody");
+      var select = document.getElementById("deleteProjectSelect");
+      var projects = NexusStore.getProjects();
+
+      tbody.innerHTML = "";
+      select.innerHTML = '<option value="">Select a project</option>';
+
+      projects.forEach(function (p) {
+        var statusClass = p.status === "active" ? "status-active" : "status-pending";
+        var statusLabel = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+
+        tbody.innerHTML +=
+          '<tr>' +
+          '  <td class="name-cell">' + p.name + '</td>' +
+          '  <td>' + p.category + '</td>' +
+          '  <td><span class="status ' + statusClass + '">' + statusLabel + '</span></td>' +
+          '  <td>' + p.created + '</td>' +
+          '  <td><button class="btn btn-danger" style="padding:4px 12px;font-size:12px" onclick="deleteProjectById(\'' + p.id + '\')">Delete</button></td>' +
+          '</tr>';
+
+        select.innerHTML += '<option value="' + p.id + '">' + p.name + ' (' + p.id + ')</option>';
+      });
+    }
+
+
+    /**
+     * ═══════════════════════════════════════════════
+     *  deleteProject()
+     * ═══════════════════════════════════════════════
+     *  Reads the selected project ID from the dropdown
+     *  and calls NexusStore.deleteProject(id).
+     *
+     *  DELETE API equivalent: DELETE /api/projects/:id
+     * ═══════════════════════════════════════════════
+     */
+    function deleteProject() {
+      var id = document.getElementById("deleteProjectSelect").value;
+      if (!id) {
+        showToast("Please select a project to delete.", "error");
+        return;
+      }
+      deleteProjectById(id);
+    }
+
+    function deleteProjectById(id) {
+      try {
+        if (!confirm("Are you sure you want to delete project: " + id + "? This cannot be undone.")) return;
+        var deleted = NexusStore.deleteProject(id);
+        showToast("Project '" + deleted.name + "' (" + deleted.id + ") deleted successfully.", "success");
+        renderProjectsTable();
+      } catch (e) {
+        ErrorReporter.report({
+          error: e,
+          source_file: "projects.html",
+          priority: "high",
+          title: "Project deletion failed",
+          context: { module: "ProjectService", action: "deleteProject", inputs: { projectId: id } }
+        });
+        showToast("Error: " + e.message, "error");
+      }
+    }
+
+
     /**
      * ─────────────────────────────────────────────
      *  PROJECT TEMPLATES
      * ─────────────────────────────────────────────
-     *  Each category should have a template with
-     *  default fields, milestones, and structure.
-     *
-     *  This mock data represents the templates that
-     *  exist in the system.
      */
     var PROJECT_TEMPLATES = {
       engineering: {
@@ -184,12 +247,7 @@
      * ═══════════════════════════════════════════════
      *  getProjectTemplate(category)
      * ═══════════════════════════════════════════════
-     *  Looks up the template for a given project category.
-     *
-     *  BUG: This function was left as a stub during
-     *       development. It returns null instead of
-     *       looking up from PROJECT_TEMPLATES.
-     *
+     *  BUG: Returns null instead of looking up the template.
      *       The fix: return PROJECT_TEMPLATES[category] || null;
      * ═══════════════════════════════════════════════
      */
@@ -203,10 +261,6 @@
      * ═══════════════════════════════════════════════
      *  createProject()
      * ═══════════════════════════════════════════════
-     *  Reads form values, gets the project template,
-     *  and creates a new project. Crashes because
-     *  getProjectTemplate() returns null.
-     * ═══════════════════════════════════════════════
      */
     function createProject() {
       try {
@@ -214,24 +268,14 @@
         var category = document.getElementById("projectCategory").value;
         var desc     = document.getElementById("projectDesc").value;
 
-        // Validate inputs
-        if (!name.trim()) {
-          showToast("Please enter a project name.", "error");
-          return;
-        }
-        if (!category) {
-          showToast("Please select a category.", "error");
-          return;
-        }
+        if (!name.trim()) { showToast("Please enter a project name.", "error"); return; }
+        if (!category)    { showToast("Please select a category.", "error"); return; }
 
-        // Get the template for the selected category
-        // BUG: getProjectTemplate() always returns null
         var template = getProjectTemplate(category);
 
-        // THIS LINE CRASHES — template is null, so .fields throws TypeError
+        // THIS LINE CRASHES — template is null
         var requiredFields = template.fields;
 
-        // This code would run if the bug were fixed:
         var project = {
           id: NexusUtils.generateId("PROJ"),
           name: name,
@@ -243,6 +287,8 @@
           created: new Date().toISOString()
         };
 
+        NexusStore.addProject(project);
+        renderProjectsTable();
         showToast("Project '" + name + "' created with " + requiredFields.length + " fields.", "success");
 
       } catch (e) {
@@ -254,11 +300,7 @@
           context: {
             module: "ProjectService",
             action: "createProject",
-            inputs: {
-              projectName: name,
-              category: category,
-              description: desc
-            }
+            inputs: { projectName: name, category: category, description: desc }
           }
         });
         showToast("Error: " + e.message + " — reported to monitoring.", "error");
@@ -286,6 +328,9 @@
       toast.style.display = "block";
       setTimeout(function () { toast.remove(); }, 5000);
     }
+
+    /* ── Init ──────────────────────────────────── */
+    renderProjectsTable();
   </script>
 
 </body>
