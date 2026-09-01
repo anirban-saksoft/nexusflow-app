@@ -7,10 +7,8 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-
   <div class="app">
-
-    <!-- ── Sidebar ──────────────────────────────── -->
+    <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -26,28 +24,25 @@
           Projects
         </a>
         <a href="team.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           Team
         </a>
         <a href="invoices.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polygon points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Invoices
         </a>
         <a href="settings.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82A1.65 1.65 0 003 12.09V12a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33 1.65 1.65 0 001-1.51V12a2 2 0 014 0v.09a1.65 1.65 0 001 1.51z"/></svg>
           Settings
         </a>
       </nav>
     </aside>
-
-    <!-- ── Main Content ─────────────────────────── -->
+    <!-- Main Content -->
     <main class="main">
-
       <div class="page-header">
         <h1>Projects</h1>
         <p>Create and manage projects. Select a category and click "Create Project" to trigger the bug.</p>
       </div>
-
       <!-- Existing Projects Table -->
       <div class="card">
         <h2>Active Projects</h2>
@@ -82,22 +77,16 @@
           </tbody>
         </table>
       </div>
-
-      <!-- ═══════════════════════════════════════════
-           BUG: Null Reference in getProjectTemplate()
-           ═══════════════════════════════════════════
-           createProject() calls getProjectTemplate(category),
-           which returns null for any category. Then accessing
-           template.fields throws a TypeError.
-           ═══════════════════════════════════════════ -->
+      <!-- BUG: Null Reference in getProjectTemplate() -->
+      <!--     createProject() calls getProjectTemplate(category), -->
+      <!--     which returns null for any category. Then accessing -->
+      <!--     template.fields throws a TypeError. -->
       <div class="card">
         <h2>Create New Project</h2>
-
         <div class="field">
           <label>Project Name</label>
           <input type="text" id="projectName" placeholder="e.g. Website Redesign" />
         </div>
-
         <div class="field">
           <label>Category</label>
           <select id="projectCategory">
@@ -108,34 +97,27 @@
             <option value="design">Design</option>
           </select>
         </div>
-
         <div class="field">
           <label>Description</label>
           <input type="text" id="projectDesc" placeholder="Brief description of the project" />
         </div>
-
         <div class="btn-row">
           <button class="btn btn-primary" onclick="createProject()">Create Project</button>
           <button class="btn btn-secondary" onclick="resetProjectForm()">Reset</button>
         </div>
       </div>
-
       <!-- Console Panel -->
       <div class="console-panel">
         <h3>Live Error Console</h3>
         <pre id="consoleOutput"><span class="empty">Waiting for an error to be reported...</span></pre>
       </div>
-
     </main>
   </div>
-
-
-  <!-- ── Scripts ──────────────────────────────────── -->
+  <!-- Scripts -->
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
-
   <script>
-    /* ── Intercept console.log for the demo panel ── */
+    /* Intercept console.log for the demo panel */
     var _origLog = console.log;
     console.log = function () {
       _origLog.apply(console, arguments);
@@ -145,17 +127,9 @@
       }
     };
 
-
-    /**
-     * ─────────────────────────────────────────────
-     *  PROJECT TEMPLATES
-     * ─────────────────────────────────────────────
-     *  Each category should have a template with
-     *  default fields, milestones, and structure.
-     *
-     *  This mock data represents the templates that
-     *  exist in the system.
-     */
+    /************************************
+     * PROJECT TEMPLATES
+     ************************************/
     var PROJECT_TEMPLATES = {
       engineering: {
         fields: ["tech_stack", "sprint_length", "repo_url"],
@@ -179,34 +153,22 @@
       }
     };
 
-
     /**
-     * ═══════════════════════════════════════════════
-     *  getProjectTemplate(category)
-     * ═══════════════════════════════════════════════
-     *  Looks up the template for a given project category.
+     * getProjectTemplate(category)
+     * Looks up the template for a given project category.
      *
-     *  BUG: This function was left as a stub during
-     *       development. It returns null instead of
-     *       looking up from PROJECT_TEMPLATES.
-     *
-     *       The fix: return PROJECT_TEMPLATES[category] || null;
-     * ═══════════════════════════════════════════════
+     * The fix: return PROJECT_TEMPLATES[category] || null;
      */
     function getProjectTemplate(category) {
-      // BUG: Returns null instead of looking up the template
-      return null;
+      // FIX: Return null instead of looking up from templates
+      return PROJECT_TEMPLATES[category] || null;
     }
 
-
     /**
-     * ═══════════════════════════════════════════════
-     *  createProject()
-     * ═══════════════════════════════════════════════
-     *  Reads form values, gets the project template,
-     *  and creates a new project. Crashes because
-     *  getProjectTemplate() returns null.
-     * ═══════════════════════════════════════════════
+     * createProject()
+     * Reads form values, gets the project template,
+     * and creates a new project. Crashes because
+     * getProjectTemplate() returns null.
      */
     function createProject() {
       try {
@@ -227,8 +189,12 @@
         // Get the template for the selected category
         // BUG: getProjectTemplate() always returns null
         var template = getProjectTemplate(category);
+        if (!template) {
+          showToast("Error: No template found for category.", "error");
+          return;
+        }
 
-        // THIS LINE CRASHES — template is null, so .fields throws TypeError
+        // THIS LINE CRASHES — accessing template.fields throws TypeError
         var requiredFields = template.fields;
 
         // This code would run if the bug were fixed:
@@ -265,8 +231,7 @@
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
+    /* Reset form */
     function resetProjectForm() {
       document.getElementById("projectName").value = "";
       document.getElementById("projectCategory").value = "";
@@ -275,7 +240,7 @@
         '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
+    /* Toast helper */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();
@@ -287,6 +252,5 @@
       setTimeout(function () { toast.remove(); }, 5000);
     }
   </script>
-
 </body>
 </html>
