@@ -10,7 +10,7 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
+    <!-- ── Sidebar ──────────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -38,14 +38,16 @@
           Settings
         </a>
       </nav>
+      <!-- Azure SSO: signed-in user badge -->
+      <div id="userBadge"></div>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
+    <!-- ── Main Content ───────────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
         <h1>Projects</h1>
-        <p>Create and manage projects. Select a category and click "Create Project" to trigger the bug.</p>
+        <p>Create and manage projects. Select a category and click "Create Project".</p>
       </div>
 
       <!-- Existing Projects Table -->
@@ -83,13 +85,6 @@
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Null Reference in getProjectTemplate()
-           ═══════════════════════════════════════════
-           createProject() calls getProjectTemplate(category),
-           which returns null for any category. Then accessing
-           template.fields throws a TypeError.
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Create New Project</h2>
 
@@ -130,11 +125,20 @@
   </div>
 
 
-  <!-- ── Scripts ──────────────────────────────────── -->
+  <!-- ── Scripts ────────────────────────────────────── -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/msalConfig.js"></script>
+  <script src="js/authGuard.js"></script>
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
 
   <script>
+    /* ── Azure SSO: Protect this page ────────────────────── */
+    AuthGuard.protect().then(function () {
+      AuthGuard.renderUserBadge("userBadge");
+    });
+
     /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
@@ -145,17 +149,6 @@
       }
     };
 
-
-    /**
-     * ─────────────────────────────────────────────
-     *  PROJECT TEMPLATES
-     * ─────────────────────────────────────────────
-     *  Each category should have a template with
-     *  default fields, milestones, and structure.
-     *
-     *  This mock data represents the templates that
-     *  exist in the system.
-     */
     var PROJECT_TEMPLATES = {
       engineering: {
         fields: ["tech_stack", "sprint_length", "repo_url"],
@@ -179,103 +172,72 @@
       }
     };
 
-
     /**
-     * ═══════════════════════════════════════════════
-     *  getProjectTemplate(category)
-     * ═══════════════════════════════════════════════
-     *  Looks up the template for a given project category.
-     *
-     *  BUG: This function was left as a stub during
-     *       development. It returns null instead of
-     *       looking up from PROJECT_TEMPLATES.
-     *
-     *       The fix: return PROJECT_TEMPLATES[category] || null;
-     * ═══════════════════════════════════════════════
+     * getProjectTemplate(category)
+     * FIX: Previously returned null unconditionally (stub).
+     *      Now performs the actual lookup from PROJECT_TEMPLATES.
      */
     function getProjectTemplate(category) {
-      // BUG: Returns null instead of looking up the template
-      return null;
+      return PROJECT_TEMPLATES[category] || null;
     }
 
-
-    /**
-     * ═══════════════════════════════════════════════
-     *  createProject()
-     * ═══════════════════════════════════════════════
-     *  Reads form values, gets the project template,
-     *  and creates a new project. Crashes because
-     *  getProjectTemplate() returns null.
-     * ═══════════════════════════════════════════════
-     */
     function createProject() {
+      var name, category, desc;
       try {
-        var name     = document.getElementById("projectName").value;
-        var category = document.getElementById("projectCategory").value;
-        var desc     = document.getElementById("projectDesc").value;
+        name     = document.getElementById("projectName").value;
+        category = document.getElementById("projectCategory").value;
+        desc     = document.getElementById("projectDesc").value;
 
-        // Validate inputs
-        if (!name.trim()) {
-          showToast("Please enter a project name.", "error");
+        if (!name.trim()) { showToast("Please enter a project name.", "error"); return; }
+        if (!category)    { showToast("Please select a category.",    "error"); return; }
+
+        // Check permission via Azure-backed NexusAuth
+        var permResult = NexusAuth.checkPermission(null, "create_project");
+        if (!permResult.allowed) {
+          showToast("Permission denied: " + permResult.reason, "error");
           return;
         }
-        if (!category) {
-          showToast("Please select a category.", "error");
-          return;
-        }
 
-        // Get the template for the selected category
-        // BUG: getProjectTemplate() always returns null
         var template = getProjectTemplate(category);
+        if (!template) {
+          showToast("No template found for category: " + category, "error");
+          return;
+        }
 
-        // THIS LINE CRASHES — template is null, so .fields throws TypeError
         var requiredFields = template.fields;
-
-        // This code would run if the bug were fixed:
         var project = {
-          id: NexusUtils.generateId("PROJ"),
-          name: name,
-          category: category,
+          id:          NexusUtils.generateId("PROJ"),
+          name:        name,
+          category:    category,
           description: desc,
-          fields: requiredFields,
-          milestones: template.milestones,
-          status: template.default_status,
-          created: new Date().toISOString()
+          fields:      requiredFields,
+          milestones:  template.milestones,
+          status:      template.default_status,
+          created:     new Date().toISOString()
         };
 
-        showToast("Project '" + name + "' created with " + requiredFields.length + " fields.", "success");
+        showToast("Project '" + project.name + "' created with " + requiredFields.length + " fields.", "success");
 
       } catch (e) {
         ErrorReporter.report({
           error: e,
           source_file: "projects.html",
           priority: "critical",
-          title: "Project creation failed — null template for category",
-          context: {
-            module: "ProjectService",
-            action: "createProject",
-            inputs: {
-              projectName: name,
-              category: category,
-              description: desc
-            }
-          }
+          title: "Project creation failed",
+          context: { module: "ProjectService", action: "createProject",
+                     inputs: { projectName: name, category: category, description: desc } }
         });
         showToast("Error: " + e.message + " — reported to monitoring.", "error");
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
     function resetProjectForm() {
       document.getElementById("projectName").value = "";
       document.getElementById("projectCategory").value = "";
       document.getElementById("projectDesc").value = "";
-      document.getElementById("consoleOutput").innerHTML =
-        '<span class="empty">Waiting for an error to be reported...</span>';
+      document.getElementById("consoleOutput").innerHTML = '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();
