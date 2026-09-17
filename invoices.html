@@ -10,7 +10,7 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
+    <!-- ── Sidebar ──────────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -38,14 +38,16 @@
           Settings
         </a>
       </nav>
+      <!-- Azure SSO: signed-in user badge -->
+      <div id="userBadge"></div>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
+    <!-- ── Main Content ───────────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
         <h1>Invoices</h1>
-        <p>Generate and manage invoices. Fill in the details and click "Generate Invoice" to trigger the bug.</p>
+        <p>Generate and manage invoices. Fill in the details and click "Generate Invoice".</p>
       </div>
 
       <!-- Recent Invoices -->
@@ -87,18 +89,6 @@
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Multi-file — invoices.html + js/utils.js
-           ═══════════════════════════════════════════
-           generateInvoice() reads the amount from a
-           form input (which is always a string), then
-           passes it to NexusUtils.formatCurrency().
-           formatCurrency() calls amount.toFixed(2),
-           but .toFixed() is a Number method — calling
-           it on a string throws TypeError.
-           Agent must read both invoices.html and
-           js/utils.js to trace the root cause.
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Generate Invoice</h2>
 
@@ -145,11 +135,20 @@
   </div>
 
 
-  <!-- ── Scripts ──────────────────────────────────── -->
+  <!-- ── Scripts ────────────────────────────────────── -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/msalConfig.js"></script>
+  <script src="js/authGuard.js"></script>
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
 
   <script>
+    /* ── Azure SSO: Protect this page ────────────────────── */
+    AuthGuard.protect().then(function () {
+      AuthGuard.renderUserBadge("userBadge");
+    });
+
     /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
@@ -160,57 +159,43 @@
       }
     };
 
-
     /**
-     * ═══════════════════════════════════════════════
-     *  generateInvoice()
-     * ═══════════════════════════════════════════════
-     *  Reads form values and generates an invoice.
-     *
-     *  BUG: The amount from the form input is a STRING
-     *       (e.g. "5000"), but NexusUtils.formatCurrency()
-     *       in js/utils.js calls amount.toFixed(2) which
-     *       only works on Numbers. This throws TypeError:
-     *       "amount.toFixed is not a function"
-     *
-     *  The fix could be:
-     *   - In this file: pass parseFloat(amount) instead
-     *   - OR in utils.js: add parseFloat() inside formatCurrency
-     *   - Best practice: fix it in utils.js so all callers benefit
-     * ═══════════════════════════════════════════════
+     * generateInvoice()
+     * ─────────────────
+     * FIX: NexusUtils.formatCurrency() now accepts string inputs
+     *      (from form fields) by calling parseFloat() internally.
+     *      No more TypeError: "amount.toFixed is not a function".
      */
     function generateInvoice() {
+      var clientName, clientEmail, serviceDesc, amount, dueDate;
       try {
-        var clientName  = document.getElementById("clientName").value;
-        var clientEmail = document.getElementById("clientEmail").value;
-        var serviceDesc = document.getElementById("serviceDesc").value;
-        var amount      = document.getElementById("invoiceAmount").value;   // STRING from input
-        var dueDate     = document.getElementById("dueDate").value;
+        clientName  = document.getElementById("clientName").value;
+        clientEmail = document.getElementById("clientEmail").value;
+        serviceDesc = document.getElementById("serviceDesc").value;
+        amount      = document.getElementById("invoiceAmount").value;  // string from input
+        dueDate     = document.getElementById("dueDate").value;
 
-        // Validate inputs
-        if (!clientName.trim()) {
-          showToast("Please enter a client name.", "error");
+        if (!clientName.trim()) { showToast("Please enter a client name.", "error"); return; }
+        if (!amount || isNaN(amount)) { showToast("Please enter a valid amount.", "error"); return; }
+
+        // Check permission
+        var permResult = NexusAuth.checkPermission(null, "manage_invoices");
+        if (!permResult.allowed) {
+          showToast("Permission denied: " + permResult.reason, "error");
           return;
         }
-        if (!amount || isNaN(amount)) {
-          showToast("Please enter a valid amount.", "error");
-          return;
-        }
 
-        // Format the amount for display
-        // BUG: amount is a string from the form input
-        //      formatCurrency() calls .toFixed() which doesn't exist on strings
+        // FIX: formatCurrency() now handles string input via parseFloat() internally
         var formattedAmount = NexusUtils.formatCurrency(amount);
 
-        // This code would run if the bug were fixed:
         var invoice = {
-          id: NexusUtils.generateId("INV"),
-          client: clientName,
-          email: clientEmail,
+          id:      NexusUtils.generateId("INV"),
+          client:  clientName,
+          email:   clientEmail,
           service: serviceDesc,
-          amount: formattedAmount,
+          amount:  formattedAmount,
           dueDate: dueDate,
-          status: "pending",
+          status:  "pending",
           created: new Date().toISOString()
         };
 
@@ -221,34 +206,26 @@
           error: e,
           source_file: "invoices.html",
           priority: "critical",
-          title: "Invoice generation failed — type error in currency formatting",
+          title: "Invoice generation failed",
           context: {
             module: "InvoiceService",
             action: "generateInvoice",
-            inputs: {
-              clientName: clientName,
-              amount: amount,
-              amountType: typeof amount
-            }
+            inputs: { clientName: clientName, amount: amount, amountType: typeof amount }
           }
         });
         showToast("Error: " + e.message + " — reported to monitoring.", "error");
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
     function resetInvoiceForm() {
       document.getElementById("clientName").value = "";
       document.getElementById("clientEmail").value = "";
       document.getElementById("serviceDesc").value = "";
       document.getElementById("invoiceAmount").value = "";
       document.getElementById("dueDate").value = "";
-      document.getElementById("consoleOutput").innerHTML =
-        '<span class="empty">Waiting for an error to be reported...</span>';
+      document.getElementById("consoleOutput").innerHTML = '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();

@@ -10,7 +10,7 @@
 
   <div class="app">
 
-    <!-- ── Sidebar ──────────────────────────────── -->
+    <!-- ── Sidebar ──────────────────────────────────── -->
     <aside class="sidebar">
       <a href="index.html" class="sidebar-logo">
         <div class="logo-icon">N</div>
@@ -38,9 +38,11 @@
           Settings
         </a>
       </nav>
+      <!-- Azure SSO: signed-in user badge -->
+      <div id="userBadge"></div>
     </aside>
 
-    <!-- ── Main Content ─────────────────────────── -->
+    <!-- ── Main Content ───────────────────────────────── -->
     <main class="main">
 
       <div class="page-header">
@@ -95,15 +97,6 @@
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Multi-file — auth.js + team.html
-           ═══════════════════════════════════════════
-           assignRole() calls NexusAuth.checkPermission()
-           from auth.js, which returns null. Then
-           result.allowed throws TypeError.
-           Agent must read both team.html and js/auth.js
-           to trace the root cause.
-           ═══════════════════════════════════════════ -->
       <div class="card">
         <h2>Assign Role <span class="badge">Requires Permission</span></h2>
 
@@ -146,12 +139,20 @@
   </div>
 
 
-  <!-- ── Scripts ──────────────────────────────────── -->
+  <!-- ── Scripts ────────────────────────────────────── -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="js/msalConfig.js"></script>
+  <script src="js/authGuard.js"></script>
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
 
   <script>
+    /* ── Azure SSO: Protect this page ────────────────────── */
+    AuthGuard.protect().then(function () {
+      AuthGuard.renderUserBadge("userBadge");
+    });
+
     /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
@@ -162,51 +163,27 @@
       }
     };
 
-
     /**
-     * ═══════════════════════════════════════════════
-     *  assignRole()
-     * ═══════════════════════════════════════════════
-     *  Assigns a new role to a team member.
-     *
-     *  Before making the change, it calls
-     *  NexusAuth.checkPermission() to verify the
-     *  current user has the "assign_role" permission.
-     *
-     *  BUG: NexusAuth.checkPermission() in auth.js
-     *       returns null instead of { allowed, reason }.
-     *       Accessing result.allowed on null throws
-     *       a TypeError.
-     *
-     *  The agent needs to:
-     *   1. See the crash is on result.allowed
-     *   2. Trace into js/auth.js
-     *   3. Find that checkPermission() returns null
-     *   4. Fix checkPermission() to do the actual lookup
-     * ═══════════════════════════════════════════════
+     * assignRole()
+     * ────────────
+     * FIX: NexusAuth.checkPermission() previously returned null,
+     *      causing a TypeError on result.allowed.
+     *      Now returns { allowed: boolean, reason: string } correctly
+     *      by looking up the Azure AD-derived role in the permission matrix.
      */
     function assignRole() {
       try {
         var memberId = document.getElementById("memberSelect").value;
         var newRole  = document.getElementById("roleSelect").value;
 
-        if (!memberId) {
-          showToast("Please select a team member.", "error");
-          return;
-        }
-        if (!newRole) {
-          showToast("Please select a role.", "error");
-          return;
-        }
+        if (!memberId) { showToast("Please select a team member.", "error"); return; }
+        if (!newRole)  { showToast("Please select a role.",        "error"); return; }
 
-        // Get the current user (the one performing the action)
         var currentUser = NexusAuth.getCurrentUser();
 
-        // Check if current user has permission to assign roles
-        // BUG: checkPermission() returns null → result.allowed crashes
-        var result = NexusAuth.checkPermission(currentUser.id, "assign_role");
+        // FIX: checkPermission() now returns { allowed, reason } — no longer null
+        var result = NexusAuth.checkPermission(currentUser ? currentUser.id : null, "assign_role");
 
-        // THIS LINE CRASHES — result is null
         if (result.allowed) {
           showToast("Role '" + newRole + "' assigned to member " + memberId + " successfully.", "success");
         } else {
@@ -218,14 +195,14 @@
           error: e,
           source_file: "team.html",
           priority: "critical",
-          title: "Role assignment failed — null permission check result",
+          title: "Role assignment failed",
           context: {
             module: "TeamService",
             action: "assignRole",
             inputs: {
-              memberId: memberId,
-              newRole: newRole,
-              currentUser: NexusAuth.getCurrentUser().name
+              memberId: document.getElementById("memberSelect").value,
+              newRole:  document.getElementById("roleSelect").value,
+              currentUser: NexusAuth.getCurrentUser() ? NexusAuth.getCurrentUser().name : "unknown"
             }
           }
         });
@@ -233,16 +210,12 @@
       }
     }
 
-
-    /* ── Reset form ────────────────────────────── */
     function resetRoleForm() {
       document.getElementById("memberSelect").value = "";
       document.getElementById("roleSelect").value = "";
-      document.getElementById("consoleOutput").innerHTML =
-        '<span class="empty">Waiting for an error to be reported...</span>';
+      document.getElementById("consoleOutput").innerHTML = '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
     function showToast(message, type) {
       var existing = document.querySelector(".toast");
       if (existing) existing.remove();
