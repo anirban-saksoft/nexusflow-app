@@ -45,13 +45,13 @@
 
       <div class="page-header">
         <h1>Invoices</h1>
-        <p>Generate and manage invoices. Fill in the details and click "Generate Invoice" to trigger the bug.</p>
+        <p>Generate invoices and collect payments via PayPal.</p>
       </div>
 
       <!-- Recent Invoices -->
       <div class="card">
         <h2>Recent Invoices</h2>
-        <table class="data-table">
+        <table class="data-table" id="invoicesTable">
           <thead>
             <tr>
               <th>Invoice</th>
@@ -59,15 +59,17 @@
               <th>Amount</th>
               <th>Status</th>
               <th>Date</th>
+              <th>Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="invoicesBody">
             <tr>
               <td class="name-cell">INV-0041</td>
               <td>Acme Corp</td>
               <td>$12,500.00</td>
               <td><span class="status status-active">Paid</span></td>
               <td>Apr 02, 2026</td>
+              <td><span class="status status-paid-pp">PayPal Settled</span></td>
             </tr>
             <tr>
               <td class="name-cell">INV-0040</td>
@@ -75,6 +77,13 @@
               <td>$8,750.00</td>
               <td><span class="status status-pending">Pending</span></td>
               <td>Mar 28, 2026</td>
+              <td>
+                <button class="btn btn-paypal btn-sm"
+                  onclick="openPaymentModal('INV-0040', 'Globex Inc', '8750.00', 'Invoice INV-0040 — Consulting Services')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 00-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 00-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 00.554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 01.923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/></svg>
+                  Pay with PayPal
+                </button>
+              </td>
             </tr>
             <tr>
               <td class="name-cell">INV-0039</td>
@@ -82,23 +91,19 @@
               <td>$3,200.00</td>
               <td><span class="status status-inactive">Overdue</span></td>
               <td>Mar 15, 2026</td>
+              <td>
+                <button class="btn btn-paypal btn-sm"
+                  onclick="openPaymentModal('INV-0039', 'Initech LLC', '3200.00', 'Invoice INV-0039 — Design Services')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 00-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 00-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 00.554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 01.923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/></svg>
+                  Pay with PayPal
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- ═══════════════════════════════════════════
-           BUG: Multi-file — invoices.html + js/utils.js
-           ═══════════════════════════════════════════
-           generateInvoice() reads the amount from a
-           form input (which is always a string), then
-           passes it to NexusUtils.formatCurrency().
-           formatCurrency() calls amount.toFixed(2),
-           but .toFixed() is a Number method — calling
-           it on a string throws TypeError.
-           Agent must read both invoices.html and
-           js/utils.js to trace the root cause.
-           ═══════════════════════════════════════════ -->
+      <!-- Generate Invoice -->
       <div class="card">
         <h2>Generate Invoice</h2>
 
@@ -135,6 +140,24 @@
         </div>
       </div>
 
+      <!-- Generated Invoice Preview + PayPal Payment -->
+      <div class="card" id="invoicePreviewCard" style="display:none;">
+        <h2>Invoice Preview &amp; Payment <span class="badge">PayPal</span></h2>
+
+        <div class="invoice-preview" id="invoicePreview"></div>
+
+        <div class="paypal-section">
+          <p class="paypal-label">Pay this invoice securely with PayPal:</p>
+          <div id="paypal-button-container"></div>
+          <p class="paypal-note">
+            🔒 Payments are processed securely by PayPal.
+            You can pay with your PayPal account or any major credit/debit card.
+          </p>
+        </div>
+
+        <div id="paymentStatus" class="payment-status" style="display:none;"></div>
+      </div>
+
       <!-- Console Panel -->
       <div class="console-panel">
         <h3>Live Error Console</h3>
@@ -145,120 +168,271 @@
   </div>
 
 
+  <!-- ══════════════════════════════════════════════════
+       PayPal Payment Modal
+       Used when clicking "Pay with PayPal" on existing invoices
+  ══════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="paymentModal" onclick="closePaymentModal(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalTitle">Pay Invoice</h3>
+          <p id="modalSubtitle" class="modal-subtitle"></p>
+        </div>
+        <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-amount" id="modalAmount"></div>
+        <div id="modal-paypal-container"></div>
+        <p class="paypal-note">
+          🔒 Payments are processed securely by PayPal.
+          You can pay with your PayPal account or any major credit/debit card.
+        </p>
+        <div id="modalPaymentStatus" class="payment-status" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- ── Scripts ──────────────────────────────────── -->
   <script src="js/errorReporter.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/paypal.js"></script>
 
   <script>
+
+    /* ──────────────────────────────────────────────────
+       PAYPAL CONFIGURATION
+       ══════════════════════════════════════════════════
+       Replace 'YOUR_PAYPAL_CLIENT_ID' with your actual
+       PayPal Sandbox or Live Client ID from:
+         https://developer.paypal.com/dashboard/applications
+
+       For sandbox testing use the Sandbox Client ID.
+       Switch to Live Client ID before going to production.
+    ────────────────────────────────────────────────── */
+    NexusPayPal.init({
+      clientId: 'YOUR_PAYPAL_CLIENT_ID',  // <- Replace this
+      currency: 'USD',
+      intent:   'capture'
+    });
+
+
     /* ── Intercept console.log for the demo panel ── */
     var _origLog = console.log;
     console.log = function () {
       _origLog.apply(console, arguments);
-      var msg = arguments[0];
-      if (typeof msg === "string" && msg.startsWith("{")) {
-        document.getElementById("consoleOutput").textContent = msg;
+      var msg = Array.prototype.slice.call(arguments).join(' ');
+      if (msg.startsWith('{') || msg.startsWith('[NexusPayPal]')) {
+        document.getElementById('consoleOutput').textContent = msg;
       }
     };
 
 
-    /**
-     * ═══════════════════════════════════════════════
+    /* ══════════════════════════════════════════════════
      *  generateInvoice()
-     * ═══════════════════════════════════════════════
-     *  Reads form values and generates an invoice.
+     * ══════════════════════════════════════════════════
+     *  Reads form values, generates an invoice object,
+     *  renders a preview, and loads the PayPal button.
      *
-     *  BUG: The amount from the form input is a STRING
-     *       (e.g. "5000"), but NexusUtils.formatCurrency()
-     *       in js/utils.js calls amount.toFixed(2) which
-     *       only works on Numbers. This throws TypeError:
-     *       "amount.toFixed is not a function"
-     *
-     *  The fix could be:
-     *   - In this file: pass parseFloat(amount) instead
-     *   - OR in utils.js: add parseFloat() inside formatCurrency
-     *   - Best practice: fix it in utils.js so all callers benefit
-     * ═══════════════════════════════════════════════
-     */
+     *  FIX: amount is now safely parsed via parseFloat()
+     *  inside NexusUtils.formatCurrency() — no TypeError.
+     * ══════════════════════════════════════════════════ */
     function generateInvoice() {
       try {
-        var clientName  = document.getElementById("clientName").value;
-        var clientEmail = document.getElementById("clientEmail").value;
-        var serviceDesc = document.getElementById("serviceDesc").value;
-        var amount      = document.getElementById("invoiceAmount").value;   // STRING from input
-        var dueDate     = document.getElementById("dueDate").value;
+        var clientName  = document.getElementById('clientName').value.trim();
+        var clientEmail = document.getElementById('clientEmail').value.trim();
+        var serviceDesc = document.getElementById('serviceDesc').value.trim();
+        var amount      = document.getElementById('invoiceAmount').value.trim();
+        var dueDate     = document.getElementById('dueDate').value;
 
-        // Validate inputs
-        if (!clientName.trim()) {
-          showToast("Please enter a client name.", "error");
-          return;
-        }
-        if (!amount || isNaN(amount)) {
-          showToast("Please enter a valid amount.", "error");
+        /* ── Validation ─────────────────────────────── */
+        if (!clientName) { showToast('Please enter a client name.', 'error'); return; }
+        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+          showToast('Please enter a valid amount greater than 0.', 'error');
           return;
         }
 
-        // Format the amount for display
-        // BUG: amount is a string from the form input
-        //      formatCurrency() calls .toFixed() which doesn't exist on strings
-        var formattedAmount = NexusUtils.formatCurrency(amount);
-
-        // This code would run if the bug were fixed:
+        /* ── Build invoice object ───────────────────── */
         var invoice = {
-          id: NexusUtils.generateId("INV"),
-          client: clientName,
-          email: clientEmail,
-          service: serviceDesc,
-          amount: formattedAmount,
-          dueDate: dueDate,
-          status: "pending",
-          created: new Date().toISOString()
+          id        : NexusUtils.generateId('INV'),
+          client    : clientName,
+          email     : clientEmail,
+          service   : serviceDesc || 'Professional Services',
+          amount    : amount,
+          formatted : NexusUtils.formatCurrency(amount),
+          dueDate   : dueDate ? NexusUtils.formatDate(dueDate) : 'N/A',
+          created   : NexusUtils.formatDate(new Date().toISOString())
         };
 
-        showToast("Invoice " + invoice.id + " generated for " + formattedAmount + ".", "success");
+        /* ── Render invoice preview ──────────────────── */
+        document.getElementById('invoicePreview').innerHTML =
+          '<div class="invoice-meta">' +
+            '<div class="invoice-meta-row"><span>Invoice ID</span><strong>' + invoice.id + '</strong></div>' +
+            '<div class="invoice-meta-row"><span>Client</span><strong>' + invoice.client + '</strong></div>' +
+            (invoice.email ? '<div class="invoice-meta-row"><span>Email</span><strong>' + invoice.email + '</strong></div>' : '') +
+            '<div class="invoice-meta-row"><span>Service</span><strong>' + invoice.service + '</strong></div>' +
+            '<div class="invoice-meta-row"><span>Due Date</span><strong>' + invoice.dueDate + '</strong></div>' +
+            '<div class="invoice-meta-row invoice-total"><span>Total Amount</span><strong>' + invoice.formatted + '</strong></div>' +
+          '</div>';
+
+        /* ── Show preview card ──────────────────────── */
+        var previewCard = document.getElementById('invoicePreviewCard');
+        previewCard.style.display = 'block';
+        document.getElementById('paymentStatus').style.display = 'none';
+
+        /* ── Render PayPal button ───────────────────── */
+        NexusPayPal.renderButton({
+          containerId : 'paypal-button-container',
+          amount      : invoice.amount,
+          description : invoice.id + ' — ' + invoice.service,
+
+          onSuccess: function (details) {
+            showPaymentStatus(
+              'paymentStatus',
+              'success',
+              '✓ Payment Successful!',
+              'Transaction ID: ' + details.id +
+              ' | Paid by: ' + details.payer.name.given_name + ' ' + details.payer.name.surname +
+              ' | Amount: ' + invoice.formatted
+            );
+            showToast('Payment of ' + invoice.formatted + ' received! Transaction: ' + details.id, 'success');
+          },
+
+          onError: function (err) {
+            showPaymentStatus(
+              'paymentStatus',
+              'error',
+              '✗ Payment Failed',
+              'An error occurred during payment. Please try again or contact support.'
+            );
+            ErrorReporter.report({
+              error       : err,
+              source_file : 'invoices.html',
+              priority    : 'critical',
+              title       : 'PayPal payment failed for invoice ' + invoice.id,
+              context     : { module: 'PayPalPayment', invoiceId: invoice.id, amount: invoice.amount }
+            });
+          },
+
+          onCancel: function () {
+            showPaymentStatus(
+              'paymentStatus',
+              'warning',
+              '⚠ Payment Cancelled',
+              'You cancelled the payment. Click the PayPal button above to try again.'
+            );
+          }
+        });
+
+        showToast('Invoice ' + invoice.id + ' generated for ' + invoice.formatted + '.', 'success');
+        previewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       } catch (e) {
         ErrorReporter.report({
-          error: e,
-          source_file: "invoices.html",
-          priority: "critical",
-          title: "Invoice generation failed — type error in currency formatting",
-          context: {
-            module: "InvoiceService",
-            action: "generateInvoice",
-            inputs: {
-              clientName: clientName,
-              amount: amount,
-              amountType: typeof amount
-            }
-          }
+          error       : e,
+          source_file : 'invoices.html',
+          priority    : 'critical',
+          title       : 'Invoice generation failed',
+          context     : { module: 'InvoiceService', action: 'generateInvoice' }
         });
-        showToast("Error: " + e.message + " — reported to monitoring.", "error");
+        showToast('Error: ' + e.message, 'error');
       }
     }
 
 
-    /* ── Reset form ────────────────────────────── */
+    /* ══════════════════════════════════════════════════
+     *  openPaymentModal(invoiceId, client, amount, description)
+     * ══════════════════════════════════════════════════
+     *  Opens the payment modal for an existing invoice
+     *  row in the Recent Invoices table and renders
+     *  the PayPal button inside the modal.
+     * ══════════════════════════════════════════════════ */
+    function openPaymentModal(invoiceId, client, amount, description) {
+      document.getElementById('modalTitle').textContent    = 'Pay ' + invoiceId;
+      document.getElementById('modalSubtitle').textContent = client;
+      document.getElementById('modalAmount').textContent   = NexusUtils.formatCurrency(amount);
+      document.getElementById('modalPaymentStatus').style.display = 'none';
+
+      document.getElementById('paymentModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      NexusPayPal.renderButton({
+        containerId : 'modal-paypal-container',
+        amount      : amount,
+        description : description,
+
+        onSuccess: function (details) {
+          showPaymentStatus(
+            'modalPaymentStatus',
+            'success',
+            '✓ Payment Successful!',
+            'Transaction ID: ' + details.id +
+            ' | Paid by: ' + details.payer.name.given_name + ' ' + details.payer.name.surname
+          );
+          showToast('Payment of ' + NexusUtils.formatCurrency(amount) + ' received!', 'success');
+        },
+
+        onError: function (err) {
+          showPaymentStatus(
+            'modalPaymentStatus',
+            'error',
+            '✗ Payment Failed',
+            'An error occurred. Please try again.'
+          );
+        },
+
+        onCancel: function () {
+          showPaymentStatus(
+            'modalPaymentStatus',
+            'warning',
+            '⚠ Payment Cancelled',
+            'You cancelled the payment. Click the PayPal button above to try again.'
+          );
+        }
+      });
+    }
+
+
+    /* ── Close modal ──────────────────────────────── */
+    function closePaymentModal(event) {
+      if (event && event.target !== document.getElementById('paymentModal')) return;
+      document.getElementById('paymentModal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+
+    /* ── Show payment status banner ───────────────── */
+    function showPaymentStatus(elementId, type, title, message) {
+      var el = document.getElementById(elementId);
+      el.className = 'payment-status payment-status-' + type;
+      el.innerHTML = '<strong>' + title + '</strong><br>' + message;
+      el.style.display = 'block';
+    }
+
+
+    /* ── Reset form ───────────────────────────────── */
     function resetInvoiceForm() {
-      document.getElementById("clientName").value = "";
-      document.getElementById("clientEmail").value = "";
-      document.getElementById("serviceDesc").value = "";
-      document.getElementById("invoiceAmount").value = "";
-      document.getElementById("dueDate").value = "";
-      document.getElementById("consoleOutput").innerHTML =
+      ['clientName','clientEmail','serviceDesc','invoiceAmount','dueDate']
+        .forEach(function (id) { document.getElementById(id).value = ''; });
+      document.getElementById('invoicePreviewCard').style.display = 'none';
+      document.getElementById('consoleOutput').innerHTML =
         '<span class="empty">Waiting for an error to be reported...</span>';
     }
 
-    /* ── Toast helper ──────────────────────────── */
+
+    /* ── Toast helper ─────────────────────────────── */
     function showToast(message, type) {
-      var existing = document.querySelector(".toast");
+      var existing = document.querySelector('.toast');
       if (existing) existing.remove();
-      var toast = document.createElement("div");
-      toast.className = "toast " + type;
+      var toast = document.createElement('div');
+      toast.className = 'toast ' + type;
       toast.textContent = message;
       document.body.appendChild(toast);
-      toast.style.display = "block";
+      toast.style.display = 'block';
       setTimeout(function () { toast.remove(); }, 5000);
     }
+
   </script>
 
 </body>
