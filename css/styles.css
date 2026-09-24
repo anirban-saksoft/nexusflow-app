@@ -28,6 +28,9 @@
   --warning: #fbbf24;
   --warning-bg: #2d2305;
   --warning-border: #5c4a0e;
+  --paypal-blue: #003087;
+  --paypal-gold: #ffc439;
+  --paypal-gold-hover: #f0b429;
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
   --radius: 10px;
@@ -297,6 +300,31 @@ body {
   background: #3d1519;
 }
 
+/* ── PayPal Button ─────────────────────────────── */
+.btn-paypal {
+  background: var(--paypal-gold);
+  color: var(--paypal-blue);
+  border: none;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.btn-paypal:hover {
+  background: var(--paypal-gold-hover);
+  color: var(--paypal-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 196, 57, 0.3);
+}
+
+.btn-paypal svg {
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
 .btn-row {
   display: flex;
   gap: 10px;
@@ -474,6 +502,13 @@ body {
 .status-pending  { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
 .status-inactive { background: var(--bg-surface-2); color: var(--text-muted); border: 1px solid var(--border); }
 
+/* PayPal Settled badge */
+.status-paid-pp {
+  background: rgba(0, 48, 135, 0.25);
+  color: #7eb3ff;
+  border: 1px solid rgba(0, 48, 135, 0.5);
+}
+
 /* ── Search Bar ────────────────────────────────── */
 .search-bar {
   display: flex;
@@ -503,10 +538,228 @@ body {
   color: var(--text-muted);
 }
 
+/* ══════════════════════════════════════════════════
+   PayPal Integration Styles
+   ══════════════════════════════════════════════════ */
+
+/* ── Invoice Preview ───────────────────────────── */
+.invoice-preview {
+  margin-bottom: 24px;
+}
+
+.invoice-meta {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.invoice-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.invoice-meta-row:last-child {
+  border-bottom: none;
+}
+
+.invoice-meta-row span {
+  color: var(--text-secondary);
+}
+
+.invoice-meta-row strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.invoice-meta-row.invoice-total {
+  background: var(--bg-surface-2);
+  padding: 16px;
+}
+
+.invoice-meta-row.invoice-total span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.invoice-meta-row.invoice-total strong {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--success);
+  letter-spacing: -0.5px;
+}
+
+/* ── PayPal Section ────────────────────────────── */
+.paypal-section {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 4px;
+}
+
+.paypal-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#paypal-button-container,
+#modal-paypal-container {
+  max-width: 400px;
+  min-height: 50px;
+}
+
+.paypal-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+/* PayPal SDK loading/error states */
+.paypal-loading {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 14px 0;
+  font-style: italic;
+}
+
+.paypal-error {
+  font-size: 13px;
+  color: var(--error);
+  padding: 12px 16px;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: var(--radius);
+  margin-top: 8px;
+}
+
+/* ── Payment Status Banner ─────────────────────── */
+.payment-status {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.payment-status-success {
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+}
+
+.payment-status-error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error);
+}
+
+.payment-status-warning {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
+}
+
+/* ── Modal Overlay ─────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-overlay.open {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color var(--transition);
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--success);
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
 /* ── Responsive ────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .main { margin-left: 0; padding: 24px 20px; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .field-row { grid-template-columns: 1fr; }
+  .modal-box { max-width: 100%; }
 }
